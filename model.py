@@ -1,26 +1,11 @@
-import torch
-from torch.autograd import Variable
-import torch.nn as nn
-import torch.nn.functional as F
-import math
-import json
-import matplotlib.pyplot as plt
 
-def import_json(path):
-    with open(path, 'r') as file:
-        hyper_parameters = json.load(file)
-    return hyper_parameters
 
-hyper_parameters = import_json('./hyper_parameters.json')
-
-LATENT_DIM = hyper_parameters['LATENT_DIM']
-RESIZE = hyper_parameters['RESIZE']
 
 class Net(nn.Module):
     def __init__(self, latent_dim=LATENT_DIM):
         super(Net, self).__init__()
         
-        #encoder
+        # Encoder
         self.conv_e1 = nn.Conv2d(3, 32, kernel_size=4, stride=2, padding=1)
         self.bn_e1 = nn.BatchNorm2d(32)
         self.conv_e2 = nn.Conv2d(32, 64, kernel_size=4, stride=2, padding=1)
@@ -33,7 +18,7 @@ class Net(nn.Module):
         self.fc_mean = nn.Linear(256*RESIZE//16*RESIZE//16, latent_dim)
         self.fc_logvar = nn.Linear(256*RESIZE//16*RESIZE//16, latent_dim)
         
-        #decoder
+        # Decoder
         self.fc_d = nn.Linear(latent_dim, 256*RESIZE//16*RESIZE//16)
         
         self.up = nn.Upsample(scale_factor=2)
@@ -46,33 +31,29 @@ class Net(nn.Module):
         self.bn_d3 = nn.BatchNorm2d(32)
         self.conv_d4 = nn.Conv2d(32, 3, kernel_size=3, stride=1, padding=1)
         
-        ##### VAMP PRIOR STUFF ####
-        self.number_components = 500 #num of pseudo-inputs
+        # VampPrior inits
+        self.number_components = 500 # num of pseudo-inputs
         
         self.meanproj = nn.Linear(self.number_components, (3*RESIZE*RESIZE), bias=False)
         self.nonlinear = nn.Hardtanh(min_val=0.0, max_val=1.0)
         
-        self.idle_input = Variable(torch.eye(self.number_components, self.number_components), requires_grad = False).cuda()
+        self.idle_input = Variable(torch.eye(self.number_components, self.number_components), requires_grad=False).cuda()
         
         self.means = nn.Sequential(self.meanproj, self.nonlinear)
-        ##### VAMP PRIOR STUFF ####
-        
-        
+    
+    
     def calculate_loss(self, x, beta=10.):
         x_out, z_mean, z_logvar = self.forward(x)
-
-        z = self.latent(z_mean, z_logvar)
-        log_p_z = self.log_p_z(z)   # b
-        # z = b x L
         # z_mean = b x L
         # z_logvar = b x L
+        
+        z = self.latent(z_mean, z_logvar) # b x L
+        log_p_z = self.log_p_z(z) # b
         log_q_z = self.log_norm(z, z_mean, z_logvar, dim=1) # b
+        
         RE = F.l1_loss(x_out, x, size_average=False)
         KL = torch.sum(-(log_p_z - log_q_z))
-        
         loss = RE + beta*KL
-        
-        
         return loss, RE, KL
 
     
@@ -93,7 +74,6 @@ class Net(nn.Module):
         return log_prior
     
     
-    
     def log_norm(self, z, zmean, zlogvar, dim, average=False):
         log_normal = -0.5 * ( zlogvar + torch.pow( z - zmean, 2 ) / torch.exp( zlogvar ) )
         if average:
@@ -103,7 +83,8 @@ class Net(nn.Module):
         
     def encoder(self, x):
         ''' encoder: q(z|x)
-            input: x, output: mean, logvar
+            input: x
+            output: mean, logvar
         '''
         x = F.leaky_relu(self.bn_e1(self.conv_e1(x)))
         x = F.leaky_relu(self.bn_e2(self.conv_e2(x)))
@@ -117,7 +98,8 @@ class Net(nn.Module):
     def latent(self, z_mu, z_logvar):
         ''' 
             encoder: z = mu + sd * e
-            input: mean, logvar. output: z
+            input: mean, logvar
+            output: z
         '''
         sd = torch.exp(z_logvar * 0.5)
         e = Variable(torch.randn(sd.size())).cuda()
@@ -127,7 +109,8 @@ class Net(nn.Module):
     def decoder(self, z):
         '''
             decoder: p(x|z)
-            input: z. output: x
+            input: z
+            output: x
         '''
         x = self.fc_d(z)
         x = x.view(-1, 256, RESIZE//16, RESIZE//16)
