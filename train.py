@@ -1,8 +1,8 @@
 import argparse
-from utils import *
+from model import *
 
 parser = argparse.ArgumentParser(description='PyTorch VAE Training')
-parser.add_argument('--data', default='pokemon', help='Dataset name')
+parser.add_argument('--data', default='Pokemon', help='Dataset name')
 parser.add_argument('--epochs', '-e', default=5000, type=int, help='Total epochs to run (default: 5000)')
 parser.add_argument('--batch_size', '-bs', default=256, type=int, help='Mini-batch size (default: 256)')
 parser.add_argument('--learn_rate', '-lr', default=1e-3, type=int, help='Learning rate (default: 1e-3)')
@@ -35,7 +35,7 @@ def train(model, optimizer, scheduler, dataloader, epoch, label, losses, bces, k
         print("Epoch:", epoch, '- Loss: {:3f}'.format(loss.item()))
         multi_plot(images, model)
         
-        if epoch%10 == 0:
+        if (epoch%10 == 0 and epoch < 150) or epoch%100 == 0:
             save_file = "checkpoints/" + label + "_epoch_{:06d}".format(epoch) + '.pth'
             if not os.path.isfile(save_file):
                 torch.save({
@@ -48,7 +48,7 @@ def train(model, optimizer, scheduler, dataloader, epoch, label, losses, bces, k
                     'cs' : step
                 }, save_file)
                 print("Saved checkpoint")
-            data_train(model, "/home/ubuntu/VAE/Pokemon/charizard.jpg", epoch)
+            data_train(model, "/home/ubuntu/VampPrior/Pokemon/charizard.jpg", epoch)
     return losses, bces, kls
 
 

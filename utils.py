@@ -12,6 +12,7 @@ import cv2
 import csv
 import sys
 import json
+import math
 import imageio
 import numpy as np
 import pandas as pd
@@ -56,10 +57,10 @@ def gen_data_list(name="Pokemon"):
 
 class MultiSet(Utils.Dataset):
     """
-    Dataloader for the model. Can easily add more datasets.
+        Dataloader for the model. Can easily add more datasets.
     """
     def __init__(self, name='Pokemon'):
-            self.list = pd.read_csv(name+"List", header=None, delimiter=',').values[0]
+        self.list = pd.read_csv(name+"List", header=None, delimiter=',').values[0]
     
     def __len__(self):
         return len(self.list)
@@ -146,6 +147,7 @@ def data_train(model, path, epoch):
         plt.imsave("data/img_{:04d}".format(epoch//10) + ".png", im)
         print("Saved checkpoint image")
     except:
+        raise
         pass
     
 
