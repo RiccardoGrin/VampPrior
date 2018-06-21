@@ -35,7 +35,7 @@ def train(model, optimizer, scheduler, dataloader, epoch, label, losses, bces, k
         print("Epoch:", epoch, '- Loss: {:3f}'.format(loss.item()))
         multi_plot(images, model)
         
-        if (epoch%10 == 0 and epoch < 150) or epoch%100 == 0:
+        if epoch%1 == 0:
             save_file = "checkpoints/" + label + "_epoch_{:06d}".format(epoch) + '.pth'
             if not os.path.isfile(save_file):
                 torch.save({
@@ -48,7 +48,10 @@ def train(model, optimizer, scheduler, dataloader, epoch, label, losses, bces, k
                     'cs' : step
                 }, save_file)
                 print("Saved checkpoint")
-            data_train(model, "/home/ubuntu/VampPrior/Pokemon/charizard.jpg", epoch)
+            if NAME == "Pokemon": 
+                data_train(model, "/home/ubuntu/VampPrior/Pokemon/charizard.jpg", epoch)
+            elif NAME == "Obama": 
+                data_train(model, "/home/ubuntu/VampPrior/Obama/00039-02753.jpg", epoch)
     return losses, bces, kls
 
 

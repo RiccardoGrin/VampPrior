@@ -23,12 +23,13 @@ import matplotlib.image as mpimg
 from IPython.display import clear_output
 
 
-LATENT_DIM = 20
-BATCH_SIZE = 256
-MAX_EPOCHS = 50
-RESIZE = 128
+LATENT_DIM = 30
+BATCH_SIZE = 32
+MAX_EPOCHS = 5000
+RESIZE = 256
 BETA = 10
-LR = 1e-3
+LR = 1e-4
+NAME = "Obama"
     
 
 if not os.path.isdir('sweep'):
@@ -69,17 +70,6 @@ class MultiSet(Utils.Dataset):
         data = mpimg.imread(self.list[index])
         data = cv2.resize(data, (RESIZE,RESIZE))/255
         return data
-
-
-def criterion(x_out, target, z_mean, z_logvar, alpha=1, beta=BETA):
-    """
-        Criterion for VAE done analytically
-        output: loss, bce, KL Divergence
-    """
-    bce = F.mse_loss(x_out, target, size_average=False) # Use MSE loss for images
-    kl = -0.5 * torch.sum(1 + z_logvar - (z_mean**2) - torch.exp(z_logvar)) # Analytical KL Divergence - Assumes p(z) is Gaussian Distribution
-    loss = ((alpha * bce) + (beta * kl)) / x_out.size(0)    
-    return loss, bce, kl
 
 
 def load_checkpoint(filename, net, LR):
@@ -126,7 +116,7 @@ def multi_plot(images, model, ROW=4, COL=4):
         f, axarr = plt.subplots(ROW, COL, figsize=(15, ROW*4))
         for row in range(ROW//2):
             for col in range(COL):
-                image = images[col+(COL*row),:,:,:].unsqueeze(0)
+                image = images[col+((COL-1)*row),:,:,:].unsqueeze(0)
                 axarr[2*row,col].imshow(image.squeeze().numpy())
                 image = image.permute(0,3,1,2)
                 x_out, _, _ = model(Variable(image.float().cuda()))
@@ -134,7 +124,7 @@ def multi_plot(images, model, ROW=4, COL=4):
                 axarr[2*row+1,col].imshow(x_out.data.cpu().squeeze().numpy())
         plt.show()
     except:
-        pass
+        raise
 
     
 def data_train(model, path, epoch):
