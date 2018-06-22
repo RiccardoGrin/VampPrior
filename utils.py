@@ -23,13 +23,13 @@ import matplotlib.image as mpimg
 from IPython.display import clear_output
 
 
-LATENT_DIM = 30
+LATENT_DIM = 20
 BATCH_SIZE = 32
 MAX_EPOCHS = 5000
 RESIZE = 256
 BETA = 10
 LR = 1e-4
-NAME = "Obama"
+NAME = "Pokemon"
     
 
 if not os.path.isdir('sweep'):
@@ -134,7 +134,7 @@ def data_train(model, path, epoch):
         x_in = Variable(torch.FloatTensor(data).unsqueeze(0).permute(0,3,1,2).cuda())
         x_out, _, _ = model(x_in)
         im = np.floor(x_out.permute(0,2,3,1).data.cpu().squeeze().numpy()*255).astype(np.uint8)
-        plt.imsave("data/img_{:04d}".format(epoch//10) + ".png", im)
+        plt.imsave("data/img_{:04d}".format(epoch) + ".png", im)
         print("Saved checkpoint image")
     except:
         raise
